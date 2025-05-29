@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/modules/export-data.js"></script>
+    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 2.5rem;
+        }
+        .card {
+            background-color: #f8fafc;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4a90e2;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .message-box {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+        .message-box.success {
+            background-color: #d1fae5; 
+            color: #065f46; 
+            border: 1px solid #34d399; 
+        }
+        .message-box.error {
+            background-color: #fee2e2; 
+            color: #991b1b; 
+            border: 1px solid #ef4444; 
+        }
+        .message-box.info {
+            background-color: #e0f2fe; 
+            color: #0c4a6e; 
+            border: 1px solid #38bdf8; 
+        }
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 10px;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px 15px;
+        }
+        th {
+            background-color: #e2e8f0;
+            color: #4a5568;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        td {
+            background-color: #ffffff;
+            border-bottom: 1px solid #edf2f7;
+        }
+        tr:first-child th:first-child { border-top-left-radius: 8px; }
+        tr:first-child th:last-child { border-top-right-radius: 8px; }
+        tr:last-child td:first-child { border-bottom-left-radius: 8px; }
+        tr:last-child td:last-child { border-bottom-right-radius: 8px; }
+        .action-buttons button {
+            margin-left: 0.5rem;
+        }
+
+        /* Custom Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        .modal-buttons {
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: space-around;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Stock</h1>
+        
+
+        <div id="message-area" class="hidden message-box"></div>
+
+        <section class="mb-12 card">
+            <h2 id="form-title" class="text-2xl font-semibold text-gray-700 mb-4">Ajouter un Nouvel Article en Stock</h2>
+            <form id="stock-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="hidden" id="stock-id">
+                <div>
+                    <label for="product-name" class="block text-sm font-medium text-gray-700 mb-1">Nom du Produit</label>
+                    <input type="text" id="product-name" placeholder="Ex: Ordinateur Portable" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+                </div>
+                <div>
+                    <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">Quantité</label>
+                    <input type="number" id="quantity" placeholder="Ex: 100" min="0" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" required>
+                </div>
+                <div class="md:col-span-2 flex justify-end space-x-3">
+                    <button type="submit" id="submit-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg
+                        shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center">
+                        <span id="form-spinner" class="loading-spinner mr-2 hidden"></span>
+                        Ajouter l'Article
+                    </button>
+                    <button type="button" id="cancel-edit-button" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg
+                        shadow-md hover:shadow-lg transition-all duration-200 hidden">
+                        Annuler
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <section class="mb-12 card">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Liste des Stocks Actuels</h2>
+            <button id="refresh-stocks-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg
+                shadow-md hover:shadow-lg transition-all duration-200 mb-4 flex items-center justify-center">
+                <span id="refresh-spinner" class="loading-spinner mr-2 hidden"></span>
+                Actualiser les Stocks
+            </button>
+            <div id="stocks-list-container" class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th class="py-3 px-4 rounded-tl-lg">ID</th>
+                            <th class="py-3 px-4">Nom du Produit</th>
+                            <th class="py-3 px-4">Quantité</th>
+                            <th class="py-3 px-4 rounded-tr-lg">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stocks-table-body">
+                        <tr id="no-stocks-message" class="hidden">
+                            <td colspan="4" class="p-4 text-gray-500 text-center">Aucun article en stock pour le moment.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4 text-center">Visualisation des Stocks</h2>
+            <div id="stock-chart" class="w-full h-96"></div>
+        </section>
+    </div>
+
+    <div id="confirmation-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <p class="text-xl font-semibold text-gray-800 mb-4">Confirmation</p>
+            <p id="modal-message" class="text-gray-700 mb-6">Êtes-vous sûr de vouloir effectuer cette action ?</p>
+            <div class="modal-buttons">
+                <button id="modal-confirm-button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-5 rounded-lg shadow-md">Confirmer</button>
+                <button id="modal-cancel-button" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-5 rounded-lg shadow-md">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let simulatedStocks = [];
+        let nextStockId = 1; 
+
+        const messageArea = document.getElementById('message-area');
+        const stockForm = document.getElementById('stock-form');
+        const formTitle = document.getElementById('form-title');
+        const stockIdInput = document.getElementById('stock-id');
+        const productNameInput = document.getElementById('product-name');
+        const quantityInput = document.getElementById('quantity');
+        const submitButton = document.getElementById('submit-button');
+        const formSpinner = document.getElementById('form-spinner');
+        const cancelEditButton = document.getElementById('cancel-edit-button');
+        const refreshStocksButton = document.getElementById('refresh-stocks-button');
+        const refreshSpinner = document.getElementById('refresh-spinner');
+        const stocksTableBody = document.getElementById('stocks-table-body');
+        const noStocksMessage = document.getElementById('no-stocks-message');
+        const stockChartContainer = document.getElementById('stock-chart');
+
+        const confirmationModal = document.getElementById('confirmation-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalConfirmButton = document.getElementById('modal-confirm-button');
+        const modalCancelButton = document.getElementById('modal-cancel-button');
+        let resolveModalPromise; 
+
+        let stockHighchart;
+
+        
+        function showMessage(message, type) {
+            messageArea.textContent = message;
+            messageArea.className = `message-box ${type}`;
+            messageArea.classList.remove('hidden');
+            setTimeout(() => {
+                messageArea.classList.add('hidden');
+            }, 5000);
+        }
+
+        function showConfirmationModal(message) {
+            modalMessage.textContent = message;
+            confirmationModal.classList.remove('hidden');
+            return new Promise(resolve => {
+                resolveModalPromise = resolve;
+            });
+        }
+
+        modalConfirmButton.addEventListener('click', () => {
+            confirmationModal.classList.add('hidden');
+            if (resolveModalPromise) resolveModalPromise(true);
+        });
+
+        modalCancelButton.addEventListener('click', () => {
+            confirmationModal.classList.add('hidden');
+            if (resolveModalPromise) resolveModalPromise(false);
+        });
+
+        
+        function resetForm() {
+            stockIdInput.value = '';
+            productNameInput.value = '';
+            quantityInput.value = '';
+            formTitle.textContent = 'Ajouter un Nouvel Article en Stock';
+            submitButton.textContent = 'Ajouter l\'Article';
+            cancelEditButton.classList.add('hidden');
+            submitButton.classList.remove('hidden'); 
+        }
+
+       
+        function simulateStockUpdateBroadcast(stock, type) {
+            console.log(`Simulating StockUpdated event: ${type}`, stock);
+        
+            displayStocks(); 
+            updateChart();  
+        }
+
+        
+        async function createStockApi(stockData) {
+            submitButton.disabled = true;
+            formSpinner.classList.remove('hidden');
+            showMessage('', '');
+
+            console.log('Simulating stock creation:', stockData);
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const newStock = {
+                        id: nextStockId++,
+                        product_name: stockData.product_name,
+                        quantity: stockData.quantity,
+                        created_at: new Date().toISOString()
+                    };
+                    simulatedStocks.push(newStock);
+                    simulateStockUpdateBroadcast(newStock, 'created'); 
+                    resolve({ status: 201, message: 'Article ajouté au stock avec succès !', stock: newStock });
+                    submitButton.disabled = false;
+                    formSpinner.classList.add('hidden');
+                }, 1000);
+            });
+        }
+
+        
+        async function getStocksApi() {
+            refreshStocksButton.disabled = true;
+            refreshSpinner.classList.remove('hidden');
+            showMessage('', '');
+
+            console.log('Simulating fetching all stocks...');
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    resolve({ status: 200, stocks: simulatedStocks });
+                    refreshStocksButton.disabled = false;
+                    refreshSpinner.classList.add('hidden');
+                }, 800);
+            });
+        }
+
+       
+        async function updateStockApi(id, stockData) {
+            submitButton.disabled = true;
+            formSpinner.classList.remove('hidden');
+            showMessage('', '');
+
+            console.log(`Simulating update for stock ID: ${id}`, stockData);
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    const index = simulatedStocks.findIndex(stock => stock.id === id);
+                    if (index !== -1) {
+                        simulatedStocks[index] = {
+                            ...simulatedStocks[index],
+                            product_name: stockData.product_name,
+                            quantity: stockData.quantity,
+                            updated_at: new Date().toISOString()
+                        };
+                        simulateStockUpdateBroadcast(simulatedStocks[index], 'updated'); 
+                        resolve({ status: 200, message: 'Stock mis à jour avec succès !', stock: simulatedStocks[index] });
+                    } else {
+                        reject({ status: 404, message: 'Article non trouvé.' });
+                    }
+                    submitButton.disabled = false;
+                    formSpinner.classList.add('hidden');
+                }, 1000);
+            });
+        }
+
+        
+        async function destroyStockApi(id) {
+            showMessage('', '');
+
+            console.log(`Simulating deletion for stock ID: ${id}`);
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    const initialLength = simulatedStocks.length;
+                    const deletedStock = simulatedStocks.find(stock => stock.id === id);
+                    simulatedStocks = simulatedStocks.filter(stock => stock.id !== id);
+                    if (simulatedStocks.length < initialLength) {
+                        simulateStockUpdateBroadcast(deletedStock, 'deleted'); // Simuler le broadcast
+                        resolve({ status: 204, message: 'Article supprimé du stock avec succès !' });
+                    } else {
+                        reject({ status: 404, message: 'Article non trouvé.' });
+                    }
+                }, 800);
+            });
+        }
+
+       
+        async function displayStocks() {
+            try {
+                const response = await getStocksApi();
+                if (response.status === 200) {
+                    const stocks = response.stocks;
+                    stocksTableBody.innerHTML = ''; 
+
+                    if (stocks.length === 0) {
+                        noStocksMessage.classList.remove('hidden');
+                    } else {
+                        noStocksMessage.classList.add('hidden');
+                        stocks.forEach(stock => {
+                            const row = document.createElement('tr');
+                            row.classList.add('rounded-lg', 'shadow-sm', 'hover:shadow-md', 'transition-shadow', 'duration-200');
+                            row.innerHTML = `
+                                <td class="py-3 px-4 rounded-l-lg">${stock.id}</td>
+                                <td class="py-3 px-4">${stock.product_name}</td>
+                                <td class="py-3 px-4">${stock.quantity}</td>
+                                <td class="py-3 px-4 rounded-r-lg action-buttons">
+                                    <button data-id="${stock.id}" data-name="${stock.product_name}" data-quantity="${stock.quantity}"
+                                            class="edit-button bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-1 px-3 rounded-md text-sm">
+                                        Éditer
+                                    </button>
+                                    <button data-id="${stock.id}" data-name="${stock.product_name}"
+                                            class="delete-button bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-md text-sm">
+                                        Supprimer
+                                    </button>
+                                </td>
+                            `;
+                            stocksTableBody.appendChild(row);
+                        });
+
+                        document.querySelectorAll('.edit-button').forEach(button => {
+                            button.addEventListener('click', (event) => {
+                                const id = parseInt(event.target.dataset.id);
+                                const name = event.target.dataset.name;
+                                const quantity = parseInt(event.target.dataset.quantity);
+                                editStock(id, name, quantity);
+                            });
+                        });
+
+                        document.querySelectorAll('.delete-button').forEach(button => {
+                            button.addEventListener('click', async (event) => {
+                                const id = parseInt(event.target.dataset.id);
+                                const productName = event.target.dataset.name;
+                                const confirmed = await showConfirmationModal(`Voulez-vous vraiment supprimer "${productName}" (ID: ${id}) du stock ?`);
+                                if (confirmed) {
+                                    await deleteStock(id);
+                                }
+                            });
+                        });
+                    }
+                } else {
+                    showMessage(`Erreur lors de la récupération des stocks: ${response.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Erreur de récupération des stocks:', error);
+                showMessage(`Échec de la récupération des stocks: ${error.message || 'Une erreur inconnue est survenue.'}`, 'error');
+            }
+        }
+
+       
+        function updateChart() {
+            const categories = simulatedStocks.map(stock => stock.product_name);
+            const data = simulatedStocks.map(stock => stock.quantity);
+
+            if (stockHighchart) {
+                stockHighchart.update({
+                    xAxis: {
+                        categories: categories
+                    },
+                    series: [{
+                        data: data
+                    }]
+                }, true); 
+            } else {
+                stockHighchart = Highcharts.chart(stockChartContainer, {
+                    chart: {
+                        type: 'column',
+                        height: 300 
+                    },
+                    title: {
+                        text: 'Quantité de Stock par Produit'
+                    },
+                    xAxis: {
+                        categories: categories,
+                        title: {
+                            text: 'Produit'
+                        }
+                    },
+                    yAxis: {
+                        min: 0,
+                        title: {
+                            text: 'Quantité en Stock'
+                        }
+                    },
+                    tooltip: {
+                        pointFormat: 'Quantité: <b>{point.y}</b>'
+                    },
+                    plotOptions: {
+                        column: {
+                            dataLabels: {
+                                enabled: true
+                            }
+                        }
+                    },
+                    series: [{
+                        name: 'Stock',
+                        data: data,
+                        color: '#4a90e2' 
+                    }],
+                    credits: {
+                        enabled: false
+                    }
+                });
+            }
+        }
+
+        
+        stockForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const id = stockIdInput.value ? parseInt(stockIdInput.value) : null;
+            const productName = productNameInput.value.trim();
+            const quantity = parseInt(quantityInput.value);
+
+            if (!productName || isNaN(quantity) || quantity < 0) {
+                showMessage('Veuillez remplir tous les champs correctement (quantité >= 0).', 'error');
+                return;
+            }
+
+            const stockData = { product_name: productName, quantity: quantity };
+
+            try {
+                let response;
+                if (id) {
+                    response = await updateStockApi(id, stockData);
+                    if (response.status === 200) {
+                        showMessage(response.message, 'success');
+                    } else {
+                        showMessage(`Erreur lors de la mise à jour: ${response.message}`, 'error');
+                    }
+                } else {
+                    response = await createStockApi(stockData);
+                    if (response.status === 201) {
+                        showMessage(response.message, 'success');
+                    } else {
+                        showMessage(`Erreur lors de la création: ${response.message}`, 'error');
+                    }
+                }
+                resetForm();
+            } catch (error) {
+                console.error('Erreur lors de l\'opération:', error);
+                showMessage(`Échec de l'opération: ${error.message || 'Une erreur inconnue est survenue.'}`, 'error');
+            }
+        });
+
+        
+        function editStock(id, name, quantity) {
+            formTitle.textContent = `Modifier l'Article (ID: ${id})`;
+            stockIdInput.value = id;
+            productNameInput.value = name;
+            quantityInput.value = quantity;
+            submitButton.textContent = 'Mettre à Jour l\'Article';
+            cancelEditButton.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' }); 
+        }
+
+        
+        async function deleteStock(id) {
+            try {
+                const response = await destroyStockApi(id);
+                if (response.status === 204) {
+                    showMessage(response.message, 'success');
+                } else {
+                    showMessage(`Erreur lors de la suppression: ${response.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Erreur lors de la suppression:', error);
+                showMessage(`Échec de la suppression: ${error.message || 'Une erreur inconnue est survenue.'}`, 'error');
+            }
+        }
+
+        refreshStocksButton.addEventListener('click', displayStocks);
+
+        cancelEditButton.addEventListener('click', resetForm);
+
+        window.onload = () => {
+            displayStocks();
+            updateChart();  
+        };
+    </script>
+</body>
+</html>

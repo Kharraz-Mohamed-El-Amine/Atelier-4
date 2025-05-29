@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; 
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 2.5rem;
+        }
+        .card {
+            background-color: #f8fafc;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4a90e2;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .message-box {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+        .message-box.success {
+            background-color: #d1fae5; 
+            color: #065f46; 
+            border: 1px solid #34d399; 
+        }
+        .message-box.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">Api</h1>
+        
+
+        <div id="message-area" class="hidden message-box"></div>
+
+        <section class="mb-12 card">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Télécharger un Fichier</h2>
+            <form id="upload-form" class="flex flex-col space-y-4">
+                <input type="file" id="file-input" class="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-blue-50 file:text-blue-700
+                    hover:file:bg-blue-100 cursor-pointer"
+                    required>
+                <button type="submit" id="upload-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg
+                    shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center">
+                    <span id="upload-spinner" class="loading-spinner mr-2 hidden"></span>
+                    Télécharger
+                </button>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Fichiers Téléchargés (Simulés)</h2>
+            <button id="refresh-files-button" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg
+                shadow-md hover:shadow-lg transition-all duration-200 mb-4 flex items-center justify-center">
+                <span id="refresh-spinner" class="loading-spinner mr-2 hidden"></span>
+                Actualiser la Liste des Fichiers
+            </button>
+            <div id="files-list-container" class="overflow-x-auto">
+                <ul id="files-list" class="bg-white border border-gray-200 rounded-lg divide-y divide-gray-200">
+                    <li class="p-4 text-gray-500 text-center" id="no-files-message">Aucun fichier téléchargé pour le moment.</li>
+                </ul>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let simulatedFiles = []; 
+
+        const messageArea = document.getElementById('message-area');
+        const uploadForm = document.getElementById('upload-form');
+        const fileInput = document.getElementById('file-input');
+        const uploadButton = document.getElementById('upload-button');
+        const uploadSpinner = document.getElementById('upload-spinner');
+        const refreshFilesButton = document.getElementById('refresh-files-button');
+        const refreshSpinner = document.getElementById('refresh-spinner');
+        const filesList = document.getElementById('files-list');
+        const noFilesMessage = document.getElementById('no-files-message');
+
+        
+        function showMessage(message, type) {
+            messageArea.textContent = message;
+            messageArea.className = `message-box ${type}`;
+            messageArea.classList.remove('hidden');
+            setTimeout(() => {
+                messageArea.classList.add('hidden');
+            }, 5000);
+        }
+
+        
+        async function uploadFileToApi(file) {
+            uploadButton.disabled = true;
+            uploadSpinner.classList.remove('hidden');
+            showMessage('', ''); 
+
+            console.log(`Simulating file upload for: ${file.name}`);
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    if (file.size > 5 * 1024 * 1024) { 
+                        reject({ status: 413, message: 'Fichier trop volumineux. La taille maximale est de 5MB.' });
+                    } else {
+                        const newFile = {
+                            id: Date.now(), 
+                            name: file.name,
+                            size: file.size,
+                            type: file.type,
+                            uploaded_at: new Date().toISOString()
+                        };
+                        simulatedFiles.push(newFile);
+                        resolve({ status: 200, message: 'Fichier téléchargé avec succès !', file: newFile });
+                    }
+                    uploadButton.disabled = false;
+                    uploadSpinner.classList.add('hidden');
+                }, 2000); 
+            });
+        }
+
+        
+        async function fetchFilesFromApi() {
+            refreshFilesButton.disabled = true;
+            refreshSpinner.classList.remove('hidden');
+            showMessage('', ''); 
+
+            console.log('Simulating file list retrieval...');
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    resolve({ status: 200, files: simulatedFiles });
+                    refreshFilesButton.disabled = false;
+                    refreshSpinner.classList.add('hidden');
+                }, 1500); 
+            });
+        }
+
+        
+        uploadForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); 
+
+            const file = fileInput.files[0];
+            if (!file) {
+                showMessage('Veuillez sélectionner un fichier.', 'error');
+                return;
+            }
+
+            try {
+                const response = await uploadFileToApi(file);
+                if (response.status === 200) {
+                    showMessage(response.message, 'success');
+                    await displayFiles();
+                } else {
+                    showMessage(`Erreur lors du téléchargement: ${response.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Erreur de téléchargement:', error);
+                showMessage(`Échec du téléchargement: ${error.message || 'Une erreur inconnue est survenue.'}`, 'error');
+            }
+        });
+
+        
+        async function displayFiles() {
+            try {
+                const response = await fetchFilesFromApi();
+                if (response.status === 200) {
+                    const files = response.files;
+                    filesList.innerHTML = ''; 
+
+                    if (files.length === 0) {
+                        filesList.appendChild(noFilesMessage);
+                        noFilesMessage.classList.remove('hidden');
+                    } else {
+                        noFilesMessage.classList.add('hidden');
+                        files.forEach(file => {
+                            const listItem = document.createElement('li');
+                            listItem.classList.add('p-4', 'flex', 'justify-between', 'items-center', 'hover:bg-gray-50', 'transition-colors', 'duration-150', 'rounded-lg');
+                            listItem.innerHTML = `
+                                <div>
+                                    <p class="text-lg font-medium text-gray-800">${file.name}</p>
+                                    <p class="text-sm text-gray-500">Taille: ${(file.size / 1024).toFixed(2)} KB | Type: ${file.type}</p>
+                                    <p class="text-xs text-gray-400">Téléchargé le: ${new Date(file.uploaded_at).toLocaleString()}</p>
+                                </div>
+                                `;
+                            filesList.appendChild(listItem);
+                        });
+                    }
+                } else {
+                    showMessage(`Erreur lors de la récupération des fichiers: ${response.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Erreur de récupération des fichiers:', error);
+                showMessage(`Échec de la récupération des fichiers: ${error.message || 'Une erreur inconnue est survenue.'}`, 'error');
+            }
+        }
+
+        refreshFilesButton.addEventListener('click', displayFiles);
+
+        window.onload = displayFiles;
+    </script>
+</body>
+</html>

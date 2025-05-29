@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;         }
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .card {
+            background-color: #f8fafc;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 10px; 
+        }
+        th, td {
+            text-align: left;
+            padding: 12px 15px;
+        }
+        th {
+            background-color: #e2e8f0;
+            color: #4a5568;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        td {
+            background-color: #ffffff;
+            border-bottom: 1px solid #edf2f7;
+        }
+        tr:first-child th:first-child { border-top-left-radius: 8px; }
+        tr:first-child th:last-child { border-top-right-radius: 8px; }
+        tr:last-child td:first-child { border-bottom-left-radius: 8px; }
+        tr:last-child td:last-child { border-bottom-right-radius: 8px; }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4a90e2;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="container">
+        <h1 class="text-4xl font-bold text-center text-gray-800 mb-8">test js</h1>
+
+        <div id="loading" class="flex flex-col items-center justify-center py-10">
+            <div class="loading-spinner mb-4"></div>
+            <p class="text-gray-600 text-lg">Chargement des données...</p>
+        </div>
+
+        <section id="userProfileSection" class="hidden mb-12">
+            <h2 class="text-3xl font-semibold text-gray-700 mb-6 text-center">Profil Utilisateur</h2>
+            <div id="user-profile" class="card flex flex-col md:flex-row items-center p-6 space-y-6 md:space-y-0 md:space-x-8">
+                <img id="profile-avatar" src="https://placehold.co/120x120/a0aec0/ffffff?text=Avatar" alt="Avatar de l'utilisateur" class="w-32 h-32 rounded-full object-cover shadow-lg border-4 border-blue-300">
+                <div class="text-center md:text-left">
+                    <p class="text-2xl font-bold text-gray-900 mb-2">Nom: <span id="profile-name" class="font-normal"></span></p>
+                    <p class="text-lg text-gray-700 mb-1">Email: <span id="profile-email"></span></p>
+                    <p class="text-lg text-gray-700 mb-1">Genre: <span id="profile-gender"></span></p>
+                    <p class="text-lg text-gray-700">Login: <span id="profile-login"></span></p>
+                </div>
+            </div>
+        </section>
+
+        <section id="usersTableSection" class="hidden">
+            <h2 class="text-3xl font-semibold text-gray-700 mb-6 text-center">Liste des Utilisateurs</h2>
+            <div class="overflow-x-auto card p-4">
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th class="py-3 px-4 rounded-tl-lg">Nom</th>
+                            <th class="py-3 px-4">Email</th>
+                            <th class="py-3 px-4">Genre</th>
+                            <th class="py-3 px-4">Login</th>
+                            <th class="py-3 px-4 rounded-tr-lg">Adresse</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const initialUserData = {
+            name: 'John Doe',
+            email: 'johndoe@example.com',
+            avatar: 'https://placehold.co/120x120/60a5fa/ffffff?text=JD', 
+            gender: 'M',
+            login: 'johndoe123',
+            password: 'securePassword123', 
+            address: '123 Rue de la Paix, 75001 Paris'
+        };
+
+        const allUsersData = [
+            {
+                name: 'John Doe',
+                email: 'johndoe@example.com',
+                avatar: 'https://placehold.co/120x120/60a5fa/ffffff?text=JD',
+                gender: 'M',
+                login: 'johndoe123',
+                password: 'securePassword123',
+                address: '123 Rue de la Paix, 75001 Paris'
+            },
+            {
+                name: 'Jane Smith',
+                email: 'janesmith@example.com',
+                avatar: 'https://placehold.co/120x120/ef4444/ffffff?text=JS',
+                gender: 'F',
+                login: 'janesmith456',
+                password: 'anotherSecurePassword',
+                address: '456 Avenue des Champs, 69002 Lyon'
+            },
+            {
+                name: 'Peter Jones',
+                email: 'peterjones@example.com',
+                avatar: 'https://placehold.co/120x120/22c55e/ffffff?text=PJ',
+                gender: 'M',
+                login: 'peterj789',
+                password: 'mySecretPassword',
+                address: '789 Boulevard Saint-Michel, 13007 Marseille'
+            }
+        ];
+
+        
+        async function fetchUserData(delay, data) {
+            document.getElementById('loading').classList.remove('hidden'); // Afficher le spinner de chargement
+            document.getElementById('userProfileSection').classList.add('hidden');
+            document.getElementById('usersTableSection').classList.add('hidden');
+            console.log(`Début de la récupération des données (délai: ${delay}ms)...`);
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    console.log('Données utilisateur récupérées.');
+                    resolve(data);
+                }, delay);
+            });
+        }
+
+        
+        function processData(data, delay) {
+            console.log(`Début du traitement des données (délai: ${delay}ms)...`);
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const processedData = { ...data, processedAt: new Date().toISOString() };
+                    console.log('Données traitées.');
+                    resolve(processedData);
+                }, delay);
+            });
+        }
+
+        
+        function displayUserProfile(user) {
+            document.getElementById('profile-name').textContent = user.name;
+            document.getElementById('profile-email').textContent = user.email;
+            document.getElementById('profile-avatar').src = user.avatar;
+            document.getElementById('profile-gender').textContent = user.gender;
+            document.getElementById('profile-login').textContent = user.login;
+            document.getElementById('userProfileSection').classList.remove('hidden'); // Afficher la section du profil
+        }
+
+        
+        function displayUsersTable(users) {
+            const tableBody = document.getElementById('users-table-body');
+            tableBody.innerHTML = ''; 
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.classList.add('rounded-lg', 'shadow-sm', 'hover:shadow-md', 'transition-shadow', 'duration-200');
+                row.innerHTML = `
+                    <td class="py-3 px-4 rounded-l-lg">${user.name}</td>
+                    <td class="py-3 px-4">${user.email}</td>
+                    <td class="py-3 px-4">${user.gender}</td>
+                    <td class="py-3 px-4">${user.login}</td>
+                    <td class="py-3 px-4 rounded-r-lg">${user.address}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            document.getElementById('usersTableSection').classList.remove('hidden'); // Afficher la section du tableau
+        }
+
+        
+        async function main() {
+            try {
+                const userProfile = await fetchUserData(1500, initialUserData);
+                displayUserProfile(userProfile);
+
+                const allUsers = await fetchUserData(2000, allUsersData);
+                displayUsersTable(allUsers);
+
+                console.log('--- Début de l\'enchaînement des Promises ---');
+                await fetchUserData(1000, { message: 'Première étape terminée' })
+                    .then(result => {
+                        console.log('Résultat de la première étape de la chaîne:', result.message);
+                        return processData({ status: 'data_fetched', ...result }, 800);
+                    })
+                    .then(processedResult => {
+                        console.log('Résultat de la deuxième étape (traitement):', processedResult);
+                        return fetchUserData(700, { message: 'Toutes les étapes de la chaîne terminées', finalData: processedResult });
+                    })
+                    .then(finalResult => {
+                        console.log('Résultat final de l\'enchaînement:', finalResult.message);
+                        console.log('Données finales de la chaîne:', finalResult.finalData);
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors de l\'enchaînement des Promises:', error);
+                    });
+                console.log('--- Fin de l\'enchaînement des Promises ---');
+
+            } catch (error) {
+                console.error('Une erreur est survenue lors de la récupération ou du traitement des données:', error);
+                document.getElementById('loading').innerHTML = '<p class="text-red-500 text-lg">Erreur lors du chargement des données. Veuillez réessayer.</p>';
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+
+        window.onload = main;
+    </script>
+</body>
+</html>
